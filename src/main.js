@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import './plugins/vuetify'
 import App from './App.vue'
 import VueMqtt from 'vue-mqtt'
 import { Web } from 'sip.js'
