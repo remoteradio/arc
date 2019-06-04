@@ -8,7 +8,9 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
-    "vue": "^2.6.10"
+    "sip.js": "^0.14.1",
+    "vue": "^2.6.10",
+    "vue-mqtt": "^2.0.3"
   },
   "devDependencies": {
     "@vue/cli-plugin-eslint": "^3.8.0",

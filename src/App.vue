@@ -12,6 +12,9 @@ export default {
   name: 'app',
   components: {
     HelloWorld
+  },
+  mounted () {
+    this.$mqtt.subscribe('$SYS/#')
   }
 }
 </script>

@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+yarn build
+mv dist/index.html dist/kg7ga.html
+rsync -avz dist/* radon.telo.io:/var/www/radon.telo.io/
