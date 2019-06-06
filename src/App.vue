@@ -1,9 +1,9 @@
 <template>
-  <v-app>
+  <v-app id="arc" :dark="true">
     <v-toolbar app>
       <v-toolbar-title class="headline text-uppercase">
-        <span>Vuetify</span>
-        <span class="font-weight-light">MATERIAL DESIGN</span>
+        <span>KG7GA</span>&nbsp;
+        <span class="font-weight-light">Amateur Station</span>
       </v-toolbar-title>
       <v-spacer></v-spacer>
       <v-btn
@@ -11,23 +11,25 @@
         href="https://github.com/vuetifyjs/vuetify/releases/latest"
         target="_blank"
       >
-        <span class="mr-2">Latest Release</span>
       </v-btn>
     </v-toolbar>
-
     <v-content>
-      <HelloWorld/>
+      <v-container fluid>
+        <Station/>
+      </v-container>
     </v-content>
   </v-app>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld'
+import Station from './components/Station'
 
 export default {
   name: 'App',
-  components: {
-    HelloWorld
+  components: { Station },
+  mounted () {
+    this.$mqtt.subscribe('shack/#')
+    this.$mqtt.subscribe('$SYS/#')
   },
   data () {
     return {
