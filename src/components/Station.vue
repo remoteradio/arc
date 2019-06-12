@@ -1,10 +1,13 @@
 <template>
   <v-container fluid>
-        <div class="nixie-freq">
+        <div class="nixie-freq" v-on:mousewheel.prevent="mousewheel">
           <nixie-string :string="nixieFreq"></nixie-string>
         </div>
         <v-flex>
-          <LinearGauge :value="smeter" :options="{ colorPlate: 'black', colorNumbers: 'orange', colorBar: '#100', colorBarProgress: 'orange', barWidth: 5, borders: false, tickSide: 'right', numberSide: 'right', units: 'Signal Strength (dB)', width: 401, height: 130, barBeginCircle: 0 }"></LinearGauge>
+          <LinearGauge
+            :value="smeter"
+            :options="{ colorPlate: 'black', colorNumbers: 'orange', colorBar: '#100', colorBarProgress: 'orange', barWidth: 5, borders: false, tickSide: 'right', numberSide: 'right', units: 'Signal Strength (dB)', width: 401, height: 130, barBeginCircle: 0 }">
+          </LinearGauge>
         </v-flex>
         <v-flex xs12 sm6 class="py-2">
           <v-toolbar dense>
@@ -77,6 +80,15 @@
       },
       poweroff() {
         this.$mqtt.publish('shack/ic7610/power/set', 'off')
+      },
+      mousewheel(e) {
+        this.freq += 10*(e.deltaY)
+        let f = this.freq
+        let mhz = ("0" + Math.floor(f/1000000)).slice(-2)
+        let khz = ("00" + Math.floor((f%1000000)/1000)).slice(-3)
+        let dhz = ("0" + Math.floor(f/10) % 100).slice(-2)
+        this.nixieFreq = mhz + "." + khz + "." + dhz
+        this.$mqtt.publish('shack/ic7610/freq/set', this.freq.toString())
       },
       connectAudio() {
         let webrtc_options = {
