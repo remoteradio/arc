@@ -1,7 +1,7 @@
 <template>
   <v-container fluid>
         <div class="nixie-freq" v-on:mousewheel.prevent="mousewheel">
-          <nixie-string :string="nixieFreq"></nixie-string>
+          <nixie-string :string="nixieFrequencyString()"></nixie-string>
         </div>
         <v-flex>
           <LinearGauge
@@ -14,19 +14,23 @@
           <v-btn @click="powerup">ON</v-btn>
           <v-btn @click="poweroff">OFF</v-btn>
           <v-btn @click="connectAudio">Audio</v-btn>
-          <v-btn-toggle v-model="mode">
-            <v-btn flat value="cw">CW</v-btn>
-            <v-btn flat value="cwr">CWR</v-btn>
-            <v-btn flat value="usb">USB</v-btn>
-            <v-btn flat value="lsb">LSB</v-btn>
-            <v-btn flat value="am">AM</v-btn>
-            <v-btn flat value="fm">FM</v-btn>
+          <v-btn-toggle :value="mode" v-on:change="request('mode', $event)">
+            <v-btn flat value="0">LSB</v-btn>
+            <v-btn flat value="1">USB</v-btn>
+            <v-btn flat value="2">AM</v-btn>
+            <v-btn flat value="3">CW</v-btn>
+            <v-btn flat value="4">RTTY</v-btn>
+            <v-btn flat value="5">FM</v-btn>
+            <v-btn flat value="7">CW-R</v-btn>
+            <v-btn flat value="8">RTTY-R</v-btn>
+            <v-btn flat value="12">PSK</v-btn>
+            <v-btn flat value="13">PSK-R</v-btn>
           </v-btn-toggle>
           <v-spacer/>
-          <v-btn-toggle v-model="filter">
-            <v-btn flat value="wide">Wide</v-btn>
-            <v-btn flat value="med">Med</v-btn>
-            <v-btn flat value="nar">Nar</v-btn>
+          <v-btn-toggle :value="filter" v-on:change="request('filter', $event)">
+            <v-btn flat value="1">Wide</v-btn>
+            <v-btn flat value="2">Med</v-btn>
+            <v-btn flat value="3">Nar</v-btn>
           </v-btn-toggle>
           </v-toolbar>
         </v-flex>
@@ -45,20 +49,20 @@
   import LinearGauge from 'vue-canvas-gauges/src/LinearGauge'
   import RadialGauge from 'vue-canvas-gauges/src/RadialGauge'
   import NixieString from '@aterbonus/vue-nixie-clock/src/NixieString'
-  
+
+
   export default {
 
     mqtt: {
       // 'shack/ic7610/#' (data, topic) { console.log(data, topic) },
       // '$SYS/#' (data, topic) { console.log(data, topic) },
       'shack/ic7610/power' (val) { console.log("power is", val) },
+
       'shack/ic7610/freq' (rawf) { 
-        let f = parseInt(rawf.toString())
-        this.freq = f
-        let mhz = ("0" + Math.floor(f/1000000)).slice(-2)
-        let khz = ("00" + Math.floor((f%1000000)/1000)).slice(-3)
-        let dhz = ("0" + Math.floor(f/10) % 100).slice(-2)
-        this.nixieFreq = mhz + "." + khz + "." + dhz
+        // don't try to set frequency from mqtt we were tuning in last 1000ms
+        if (((new Date).getTime() - this.lastTuningAt) > 1000) {
+          this.freq = parseInt(rawf.toString())
+        }
       },
       'shack/ic7610/smeter' (r) { this.smeter = parseInt(r.toString()) },
       'shack/ic7610/mode' (r) { this.mode = r.toString() },
@@ -75,21 +79,29 @@
     },
 
     methods: {
-      powerup() {
-        this.$mqtt.publish('shack/ic7610/power/set', 'on')
+
+      request (topic, value) {
+        console.log("request " + topic + "=" + value)
+        this.$mqtt.publish('shack/ic7610/' + topic + '/set', value.toString())
       },
-      poweroff() {
-        this.$mqtt.publish('shack/ic7610/power/set', 'off')
-      },
-      mousewheel(e) {
-        this.freq += 10*(e.deltaY)
+
+      nixieFrequencyString () { 
         let f = this.freq
         let mhz = ("0" + Math.floor(f/1000000)).slice(-2)
         let khz = ("00" + Math.floor((f%1000000)/1000)).slice(-3)
         let dhz = ("0" + Math.floor(f/10) % 100).slice(-2)
-        this.nixieFreq = mhz + "." + khz + "." + dhz
-        this.$mqtt.publish('shack/ic7610/freq/set', this.freq.toString())
+        return mhz + "." + khz + "." + dhz
       },
+
+      powerup () { this.request('power', 'on') },
+      poweroff () { this.request('power', 'off') },
+
+      mousewheel(e) {
+        this.lastTuningAt = (new Date).getTime()
+        this.freq += 10*(e.deltaY)
+        this.request('freq', this.freq)
+      },
+
       connectAudio() {
         let webrtc_options = {
           media: {
@@ -110,22 +122,38 @@
       }
     },
 
-    ready () {
-      var vm = this;
-      window.addEventListener('keyup', function(event) {
-        if (event.keyCode == 40) { 
-          this.$mqtt.publish('shack/ic7610/freq/set', this.freq - 10)
-//          vm.$broadcast('down-arrow-pressed');
-        }
-      })
-    },
+//     ready () {
+//       var vm = this;
+//       window.addEventListener('keyup', function(event) {
+//         if (event.keyCode == 40) { 
+//           this.$mqtt.publish('shack/ic7610/freq/set', this.freq - 10)
+// //          vm.$broadcast('down-arrow-pressed');
+//         }
+//       })
+//     },
+
+    // watch: {
+    //   mode (oldValue, newValue) {
+    //     if (newValue && (oldValue != newValue)) {
+    //       this.request("mode", newValue)
+    //     }
+    //   },
+    //   filter (oldValue, newValue) {
+    //     if (newValue && (oldValue != newValue)) {
+    //       this.$mqtt.publish('shack/ic7610/filter/set', newValue.toString)
+    //     }
+    //   }
+
+    // },
 
     data () {
       return {
         coreTemp: 0,
         freq: 30000,
         smeter: 0,
-        nixieFreq: "00.000.00"
+        filter: null,
+        mode: null,
+        lastTuningAt: 0
       }
     }
   }
