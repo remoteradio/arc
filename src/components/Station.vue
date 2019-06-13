@@ -81,7 +81,7 @@
     methods: {
 
       request (topic, value) {
-        console.log("request " + topic + "=" + value)
+//        console.log("request " + topic + "=" + value)
         this.$mqtt.publish('shack/ic7610/' + topic + '/set', value.toString())
       },
 
@@ -97,8 +97,14 @@
       poweroff () { this.request('power', 'off') },
 
       mousewheel(e) {
+        let z = Math.min(e.layerX, 380)
+        let scale = Math.floor(Math.exp((380 - z)/30))
+//        console.log("event, scale: ", e, scale)
         this.lastTuningAt = (new Date).getTime()
-        this.freq += 10*(e.deltaY)
+        let f = this.freq + (scale)*(e.deltaY)
+        if (f < 30000) { f = 30000 } 
+        else if (f > 58000000) { f = 58000000 }
+        this.freq = f
         this.request('freq', this.freq)
       },
 
